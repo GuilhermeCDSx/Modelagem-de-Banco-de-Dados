@@ -1,0 +1,189 @@
+--- TABELA CATEGORIA DO VEÍCULO ---
+CREATE TABLE CategoriaVeiculo (
+    id_catveiculo INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome_categoria TEXT NOT NULL
+);
+
+INSERT INTO CategoriaVeiculo (nome_categoria) VALUES
+('SUV'),
+('Sedan'),
+('Hatch');
+
+--- TABELA VEÍCULO ---
+CREATE TABLE Veiculo (
+    id_veiculo INTEGER PRIMARY KEY AUTOINCREMENT,
+    marca TEXT(50),
+    placa TEXT(7),
+    km INTEGER,
+    id_catveiculo INTEGER NOT NULL,
+    FOREIGN KEY (id_catveiculo) REFERENCES CategoriaVeiculo(id_catveiculo)
+);
+
+INSERT INTO Veiculo (marca, placa, km, id_catveiculo) VALUES
+('Volkswagen T-Cross', 'ARB2X34', 34000, 1),
+('Toyota Corolla', 'BRA1S12', 23000, 2),
+('Ford Ka', 'ABC1D23', 87000, 3);
+
+--- TABELA CLIENTE ---
+CREATE TABLE Cliente (
+    id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT(100) NOT NULL,
+    cpf TEXT(14),
+    cnh TEXT(9),
+    telefone TEXT(19),
+    endereco TEXT(100)
+);
+
+INSERT INTO Cliente (nome, cpf, cnh, telefone, endereco) VALUES
+('Gabriel Monteiro', '123.456.789-10', '123456789', '+55 (41) 91234-5678', 'Rua Rio Guaporé, 123, Bairro Alto'),
+('Mariana Silva', '109.876.543-21', '987654321', '+55 (41) 98765-4321', 'Rua das Laranjeiras, 321, Das Graças'),
+('Carlos Pereira', '111.222.333-44', '123654789', '+55 (41) 91234-8765', 'Rua Jorge Wendler, 456, Xaxim');
+
+--- TABELA RESERVA ---
+CREATE TABLE Reserva (
+    id_reserva INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_cliente INTEGER NOT NULL,
+    data_inicio TEXT,
+    data_fim TEXT,
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+);
+
+INSERT INTO Reserva (id_cliente, data_inicio, data_fim) VALUES 
+(1, '2025-05-10', '2025-07-10'),
+(2, '2025-06-01', '2025-10-01'),
+(3, '2025-07-22', '2025-11-22');
+
+--- TABELA LOCAÇÃO ---
+CREATE TABLE Locacao (
+    id_locacao INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_reserva INTEGER NOT NULL,
+    km_retirada INTEGER,
+    valor_previsto INTEGER,
+    id_veiculo INTEGER NOT NULL,
+    data_retirada TEXT,
+    FOREIGN KEY (id_reserva) REFERENCES Reserva(id_reserva),
+    FOREIGN KEY (id_veiculo) REFERENCES Veiculo(id_veiculo)
+);
+
+INSERT INTO Locacao (id_reserva, km_retirada, valor_previsto, id_veiculo, data_retirada) VALUES
+(1, 34000, 1200, 1, '2025-05-10'),
+(2, 23000, 1400, 2, '2025-06-03'),
+(3, 87000, 600, 3, '2025-07-23');
+
+--- TABELA DEVOLUÇÃO ---
+CREATE TABLE Devolucao (
+    id_devolucao INTEGER PRIMARY KEY AUTOINCREMENT,
+    km_devolucao INTEGER,
+    data_fim_real TEXT,
+    id_locacao INTEGER NOT NULL,
+    valor_total_final INTEGER,
+    FOREIGN KEY (id_locacao) REFERENCES Locacao(id_locacao)
+);
+
+INSERT INTO Devolucao (km_devolucao, data_fim_real, id_locacao, valor_total_final) VALUES
+(34800, '2025-07-09', 1, 1200),
+(24650, '2025-11-06', 2, 1600),
+(88200, '2025-11-30', 3, 650);
+
+--- SELECT ---
+
+--- Listar todas as locações com cliente, veículo e datas ---
+SELECT 
+    c.nome AS cliente,
+    v.marca AS veiculo,
+    r.data_inicio,
+    r.data_fim,
+    l.valor_previsto
+FROM Locacao l
+JOIN Reserva r ON l.id_reserva = r.id_reserva
+JOIN Cliente c ON r.id_cliente = c.id_cliente
+JOIN Veiculo v ON l.id_veiculo = v.id_veiculo
+ORDER BY r.data_inicio;
+
+--- Veículos do tipo SUV ---
+SELECT marca, placa, km
+FROM Veiculo
+WHERE id_catveiculo = 1;
+
+--- Veículos do tipo Sedan ---
+SELECT marca, placa, km
+FROM Veiculo
+WHERE id_catveiculo = 2;
+
+--- Veículos do tipo Hatch ---
+SELECT marca, placa, km
+FROM Veiculo
+WHERE id_catveculo = 3;
+
+--- Locações ordenadas pelo valor previsto ---
+SELECT *
+FROM Locacao
+ORDER BY valor_previsto DESC;
+
+--- Reservas com duração maior que 30 dias ---
+SELECT id_reserva, data_inicio, data_fim
+FROM Reserva
+WHERE julianday(data_fim) - julianday(data_inicio) > 30;
+
+--- Devoluções com valor final acima de 1000 ---
+SELECT *
+FROM Devolucao
+WHERE valor_total_final > 1000;
+
+--- Devoluções com valor final abaixo de 1000 ---
+SELECT *
+FROM Devolucao
+WHERE valor_total_final < 1000;
+
+--- UPDATE ---
+
+UPDATE Cliente
+SET telefone = '+55 (41) 91122-3344'
+WHERE nome = 'Mariana Silva';
+
+--- UPADATE KM Volkswagen T-Cross ---
+UPDATE Veiculo
+SET km = 34800
+WHERE placa = 'ARB2X34';
+
+--- UPDATE KM Toyota Corolla ---
+UPDATE Veiculo
+SET km = 24650
+WHERE placa = 'BRA1S12';
+
+--- UPDATE KM Ford Ka ---
+UPDATE Veiculo
+SET km = 88200
+WHERE placa = 'ABC1D23';
+
+UPDATE Locacao
+SET valor_previsto = valor_previsto * 1.10
+WHERE id_locacao = 2;
+
+--- DELETE ---
+
+--- Remover devolução ligada às locações do cliente Carlos Pereira ---
+DELETE FROM Devolucao
+WHERE id_locacao IN (
+    SELECT l.id_locacao
+    FROM Locacao l
+    JOIN Reserva r ON l.id_reserva = r.id_reserva
+    JOIN Cliente c ON r.id_cliente = c.id_cliente
+    WHERE c.nome = 'Carlos Pereira'
+);
+
+--- Remover locações do cliente ---
+DELETE FROM Locacao
+WHERE id_reserva IN (
+    SELECT id_reserva
+    FROM Reserva
+    WHERE id_cliente = (SELECT id_cliente FROM Cliente WHERE nome = 'Carlos Pereira')
+);
+
+--- Remover reservas do cliente ---
+DELETE FROM Reserva
+WHERE id_cliente = (SELECT id_cliente FROM Cliente WHERE nome = 'Carlos Pereira');
+
+--- Remover o cliente ---
+DELETE FROM Cliente
+WHERE nome = 'Carlos Pereira';

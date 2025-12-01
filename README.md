@@ -22,7 +22,7 @@ O banco de dados contém as seguintes tabelas:
 - **Cliente:** Dados pessoais dos clientes.  
 - **Reserva:** Reservas realizadas por clientes.  
 - **Locacao:** Locações associadas às reservas e veículos.  
-- **Devolucao:** — Registro final da devolução e valores.
+- **Devolucao:** Registro final da devolução e valores.
 
 Todos os relacionamentos foram implementados corretamente utilizando `FOREIGN KEY`.
 
